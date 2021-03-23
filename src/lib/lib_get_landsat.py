@@ -55,29 +55,6 @@ def _get_aws(f_inp, fzip):
     
     return _proc_sr(_d_img, fzip, _process_sr)
     
-def _get_gcs(f_inp, fzip):
-    from gio import run_commands
-    from gio import config
-    import logging
-    import os
-    
-    _process_sr = config.getboolean('conf', 'process_sr', True)
-    _debug = config.getboolean('conf', 'debug')
-    
-    _d_img = fzip.generate_file(os.path.basename(f_inp))
-    os.makedirs(_d_img)
-    
-    _cmd = 'get_landsat_google.py -i %s -o %s -s false --temp %s' % (f_inp, _d_img, fzip.generate_file())
-    if _debug:
-        _cmd += ' --debug'
-    
-    _rs = run_commands.run(_cmd, raise_exception=False, debug=_debug)
-    if _rs[0] != 0:
-        logging.warning('skip Landsat image %s' % f_inp)
-        return
-    
-    return _proc_sr(_d_img, fzip, _process_sr)
-
 def get(f_inp, fzip):
     from gio import config
     from gio import landsat
@@ -89,16 +66,6 @@ def get(f_inp, fzip):
     
     _zip = fzip
     _f_inp = f_inp
-    
-    if config.getboolean('conf', 'use_google_landsat_id', False) and ('/' not in _f_inp):
-        # convert to google ID
-        
-        import re
-        _m = re.search('(L\w\d\d)_L(\d)TP_(\d{3})(\d{3})_.+', _f_inp)
-        
-        if _m:
-            _f_inp = 'gs://gcp-public-data-landsat/%s/0%s/%s/%s/%s' % (_m.group(1), _m.group(2), _m.group(3), _m.group(4), _f_inp)
-            logging.info('use Google ID: %s' % _f_inp)
     
     if '/' not in _f_inp:
         _f_inp = _get_aws(_f_inp, _zip)
